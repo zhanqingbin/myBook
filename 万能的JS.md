@@ -155,18 +155,21 @@
 ### JS 数据类型
 
 - 基本数据类型：String，Number，Boolean，Null，Undefined，symbol。
+  > 值类型（不互相干扰）
 - 引用数据类型：Object，Array，Function
+  > 引用类型（地址，相互改变有影响）
 
 ### 检测数据类型
 
 - typeof：优点：能够快速区分基本数据类型 缺点：不能将 Object、Array 和 Null 区分，都返回 object
-- instanceof：优点：能够区分 Array、Object 和 Function，适合用于判断自定义的类实例对象 缺点：Number，Boolean，String 基本数据类型不能判断
+- instanceof：优点：能够区分 Array、Object 和 Function，适合用于判断自定义的类实例对象 缺点：Number，Boolean，String 基本数据类型不能判断。原理：判断实例对象的属性和构造函数的属性是不是引用的同一个地址
 
   ```js
   console.log(2 instanceof Number); // false
   console.log([] instanceof Array); // true
   ```
 
+- constructor 构造函数
 - Object.prototype.toString.call()：优点：精准判断数据类型 缺点：写法繁琐不容易记，推荐进行封装后使用
   ```js
   var toString = Object.prototype.toString;
@@ -748,7 +751,7 @@ function throttle(fn, cycle) {
 - startsWith() 以 xxx 开头
 - includes() 包含 xxx
 - concat 字符串拼接
-- padEnd()/padStart() 填充字符串
+- padEnd()/padStart() 填充字符串，补白
 - trim()
 - trimEnd()
 - trimStart()
@@ -775,6 +778,8 @@ console.log(date.getSeconds()); //秒
 console.log(date.getMilliseconds()); //ms 毫秒
 console.log(date.getTime()); //这个时间对象距离 1970 年 1 月 1 日 0 点 0 分 0 秒
 ```
+
+- ES9 For await of :异步集合遍历
 
 ### 类 Class
 
@@ -821,6 +826,114 @@ class Widget {
 function setName(name) {
   return (this.name = name);
 }
+```
+
+### 原型链
+
+> - 类：prototype 显示原型
+> - 实例：**proto** 隐式原型
+
+- 1 创建构造函数/类时
+
+  - 天生自带一个 prototype 的属性。
+  - prototype 的值是一个对象类型（装的就是我们公有的属性）`console.log(Person.prototype);//Person {}`
+  - prototype 的值也有一个天生自带的属性叫 constructor 构造器，并且这个属性的值是函数(构造函数，类)本身`console.log(Person.prototype.constructor);//[Function: Person]`
+
+  ```js
+  //所有的对象都是Object的实例 （Object叫我们的基类）
+  console.log(Person.prototype.__proto__); //{}
+  console.log(Person.prototype.__proto__ == Object.prototype); //true  Object也是函数
+  ```
+
+  > 构造函数,类 ——> prototype(值：对象类型) ——> constructor(值：构造函数，类)本身
+
+- 2 每个实例都是对象，都有**proto**属性，它是这个实例所属类的原型.`console.dir(person.__proto__==Person.prototype);//true`
+  > 实例.**proto** ——>类.prototype
+- 3 每个引用类型都有天生自带的属性**proto**,所以 prototype 的值也有天生自带一个**proto**的属性。并且这个属性的值也是一个对象类型，一直到我们的基类 Object
+  > 实例.**proto** ——>类.prototype.**proto** ——>Object.prototype
+- 4 通过类的原型添加的属性和方法都是公有的，每个实例都会自带
+- 5 一个实例的方法在运行的时候，如果这个方法是自己私有的，那么就直接用，如果不是私有的，那么通过**proto**去所属类的原型上去查找，如果还没有就通过原型的**proto**一直查到基类的 Object.如果还没有报错，如果有就直接用了。我们把这种通过**proto**查找的机制叫做**原型链**。
+  - 实例.**proto** === 原型
+  - 原型.constructor === 构造函数
+  - 构造函数.prototype === 原型
+  - 实例.constructor === 构造函数
+
+```js
+var A = function () {};
+var a = new A();
+console.log(a.__proto__); //A {}（即构造器function A 的原型对象）
+console.log(a.__proto__.constructor); //[Function: A]`（function A 本身）
+console.log(a.__proto__.__proto__); //Object {}（即构造器function Object 的原型对象）
+console.log(a.__proto__.__proto__.__proto__); //null
+//Object上有 hasOwnProperty  isPrototypeOf  propertyIsEnumerable
+
+class jQuery {
+  constructor(selector) {
+    const result = document.querySelectorAll(selector);
+    const length = result.length;
+    for (let i = 0; i < length; i++) {
+      this[i] = result[i];
+    }
+    this.length = length;
+    this.selector = selector;
+  }
+  get(index) {
+    return this[index];
+  }
+  each(fn) {
+    for (let i = 0; i < this.length; i++) {
+      const elem = this[i];
+      fn(elem);
+    }
+  }
+  on(type, fn) {
+    return this.each((elem) => {
+      elem.addEventListener(type, fn, false);
+    });
+  } // 扩展很多 DOM API
+}
+
+// 插件
+jQuery.prototype.dialog = function (info) {
+  alert(info);
+};
+
+// “造轮子”
+class myJQuery extends jQuery {
+  constructor(selector) {
+    super(selector);
+  } // 扩展自己的方法
+  addClass(className) {}
+  style(data) {}
+}
+```
+
+### new 的执行过程方
+
+```js
+let newMethod = function (Parent, ...rest) {
+  // 1.以构造器的prototype属性为原型，创建新对象；
+  let child = Object.create(Parent.prototype);
+  // 2.将this和调用参数传给构造器执行
+  let result = Parent.apply(child, rest);
+  // 3.如果构造器没有手动返回对象，则返回第一步的对象
+  return typeof result === "object" ? result : child;
+};
+```
+
+### 函数声明和函数表达式的区别：
+
+- 函数声明 function fn(){} // 代码执行前会预加载
+- 函数表达式 const fn = function(){} // 不会预加载
+
+### new Object()和 Object.create()区别：
+
+- {}等同于 new Object()，原型 Object.prototype
+- Object.create(null) 没有原型 Object.create({...}) 可指定原型
+
+```js
+const obj2 = new Object(obj1); // obj1===obj2 true  全相等的
+const obj2 = Object.create(obj1); // obj1===obj2 false 会把obj1的方法都放到obj2的原型上
 ```
 
 ### 继承
@@ -971,6 +1084,1366 @@ man.on("失恋", saveMoney); //失恋 ，绑定一个函数方法
 ```
 
 ### 事件
-![avatar](./images/js事件类.png)
 
-### 数组、继承、原型、es6、事件循环
+![avatar](https://github.com/zhanqingbin/myBook/blob/master/images/js%E4%BA%8B%E4%BB%B6%E7%B1%BB.png?raw)
+
+- 捕获和冒泡：事件捕获是为了逐层确定事件的来源,事件冒泡是为了逐级响应事件
+- 在 ie 中，document.getElementById("#test").attachEvent(type,listener);
+  detachEvent(event,function);
+
+```js
+function bindEvent(elem, type, fn) {
+  elem.addEventListener(type.fn);
+}
+bindEvent(btn1, "click", (event) => {
+  console.log(event.target); //获取触发的元素
+  event.preventDefault(); //阻止默认行为
+  alert("clicked");
+});
+// 阻止事件冒泡：e.stopPropagation()
+// 事件代理：利用事件冒泡把事件绑定到父级元素上，通过判断event.target.nodeName==='A'来进行操作
+function bindEvent(elem, type, selector, fn) {
+  if (fn == null) {
+    fn = selector;
+    selector = null;
+  }
+  elem.addEventListener(type, (event) => {
+    const target = event.target;
+    if (selector) {
+      //有代理绑定
+      if (target.matches(selector)) {
+        fn.call(target.event);
+      }
+    } else {
+      //普通绑定
+      fn.call(target, event);
+    }
+  });
+}
+```
+
+### 本地对象、内置对象、宿主对象（本全 E，内置不实例，宿主非本如 DOM）
+
+- 本地对象：ECMAScript 提供的对象，包括 Array Object RegExp 等可以 new 实例化的对象和 Math 等不可以实例化的
+- 内置对象：Gload，Math 等不可以实例化的(他们也是本地对象，内置对象是本地对象的一个子集)
+- 宿主对象：所有的非本地对象，所有的 BOM 和 DOM 对象都是宿主对象，如浏览器自带的 document,window 等对象
+
+### 页面加载
+
+- onready 是页面解析完成之后执行，而 onload 是在页面所有元素加载完成后执行
+- DOM 加载到 link 标签 css 文件的加载是与 DOM 的加载并行的,也就是说,css 在加载时 Dom 还在继续加载构建,而过程中遇到的 css 样式或者 img,则会向服务器发送一个请求,待资源返回后,将其添加到 dom 中的相对应位置中;
+- 在 script 标签中添加 defer=“ture”，则会让 js 与 DOM 并行加载，待页面加载完成后再执行 js 文件，这样则不存在阻塞；
+- 在 scirpt 标签中添加 async=“ture”，这个属性告诉浏览器该 js 文件是异步加载执行的，也就是不依赖于其他 js 和 css，也就是说无法保证 js 文件的加载顺序，但是同样有与 DOM 并行加载的效果；
+  同时使用 defer 和 async 属性时，defer 属性会失效；
+- 可以将 scirpt 标签放在 body 标签之后，这样就不会出现加载的冲突了。
+
+### ES6
+
+- 默认值
+
+  ```js
+  function f(x, y = 2, z = 4) {}
+  f(1, undefined, 11); //y传undefined是默认值2
+
+  function f(x, y = 9, z = x + y) {
+    console.log(Array.from(arguments)); //拿到传的参数
+    console.log(f.length); //直接拿函数的length，能获取到没有默认值的参数的个数
+  }
+  ```
+
+- Rest parameter 参数
+
+```js
+function sum(base, ...nums) {
+  let num = 0;
+  nums.forEach(function (item) {
+    num += item * 1;
+  });
+  return base * 2 + num;
+}
+```
+
+- spread 操作 `sum(...data)`
+
+- 箭头函数
+
+- Set 数据结构：不能重复数据，数据是可遍历的对象
+
+  ```js
+  let s = new Set([1, 2, 3]);
+  s.add(1).add(2);
+  s.delete(1);
+  s.clear(); //清空
+  s.has(1); //true
+  s.size;
+  s.keys();
+  s.values();
+  s.entries(); //返回键值对
+  s.forEach(function (item) {});
+  for (let item of s) {
+    console.log(item);
+  }
+
+  // set去重数组，牛逼！
+  let newArr = [...new Set(arr)];
+  ```
+
+- Map 数据结构：key 可以是任意值，可以是对象或者函数
+
+  ```js
+  let map = new Map([
+    [1, 2],
+    [3, 4],
+  ]);
+
+  map.set(2, 1);
+  map.delete(1); // 删除key
+  map.clear();
+  map.size;
+  map.has(1); // 查索引对应的值
+  map.get(1);
+  map.keys();
+  map.values();
+  map.entries();
+  map.forEach((value, key) => {});
+  for (let [key, value] of map) {
+  } //可遍历的对象才能用for of
+  ```
+
+- `WeakSet：只能存对象`
+- `WeakMap：只能是对象类型的key`
+- object
+
+  ```js
+  // 可以写变量或表达式
+  obj = { x, y, [z]: 6 };
+  obj = {x, y, [x + z] };
+
+  const target = {};const source = {b:3,a:4}; // 相同的属性被覆盖，不同的属性被拷贝
+  Object.assign(target,source) // es6数据拷贝(浅)引用类型的地址进行替换，不会精确到差异
+  Object.is(); // 两个值是否相等
+  Object.is(NaN,NaN);// true   NaN===NaN F
+  Object.is({},{});// false   {}==={} F
+  Object.is(+0,-0);// false   +0===-0 T
+
+  // Object.is() 会在下面这些情况下认为两个值是相同的：
+  // 两个值都是 undefined
+  // 两个值都是 null
+  // 两个值都是 true 或者都是 false
+  // 两个值是由相同个数的字符按照相同的顺序组成的字符串
+  // 两个值指向同一个对象
+  // 两个值都是数字并且
+  // 都是正零 +0
+  // 都是负零 -0
+  // 都是 NaN
+  // 都是除零和 NaN 外的其它同一个数字
+  ```
+
+- Template:模板字符串
+
+- 解构赋值
+
+  ```js
+  let arr = [1, 2];
+  let [a, b] = arr;
+  let [a, , b] = arr; // 略过某一项用，，
+  let [a, , b] = new Set([1, 2, 3]);
+
+  // 解构赋值不仅可以赋值变量，还可以赋值对象的属性
+  let user = ({ name: "s", username: "d" };
+  [user.name, user.username] = [1, 2];
+  for (let [k, v] of Object.entries(user)) {
+    console.log(k, v);//[ [ 'name', 1 ], [ 'username', 2 ] ]
+  }
+  let [user, name, ...last] = arr; //1,2,[3,4,5]
+
+  // 多维数组解构
+  let arr = [1,[2,3],4];
+  let [a,[b,c],d]=arr;
+
+  // 不完全解析
+  let [a,[,c],d]=arr;
+
+  // 变量交换
+  let x = 1,y=2;
+  [y,x]=[x,y]
+
+  // Set解构赋值
+  let [x,y] = new Set([1,2]) // x:1,y:2
+
+  let [x,...y,6] = [1,2,3,4,5,6] // Rest element must be last element
+  let [x,...y] = [1,2,3,4,5,6] // y:[2,3,4,5,6]
+
+  // 对象的解构赋值
+  let {name} = {name:'Q',age:21}
+  console.log(name) // Q
+
+  // 嵌套解构：模式不能打印，只有变量能打印
+  let obj = {a:{b:{c:3}}}; // a,b是模式，只有c是变量能打印
+  let {a:{b:{c}}} = obj
+  console.log(c); // 3
+
+  // 默认值
+  let [x=1,y]=[undefined,2] // x:1,y:2
+
+  // 修改变量名
+  let {name:myName} = obj
+  console.log(myName)
+
+  // 字符串
+  let [a,b,c] = 'hello' // a:h   b:e  c:o
+
+  // 参数是数组
+  function test([x=1,y=2]=[],z=3){
+    console.log(x,y,z)
+  }
+  test([],80)
+  ```
+
+- Promise
+
+```js
+function loadScript(src) {
+  // pending,undefined
+  return new Promise((resolve, reject) => {
+    let script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve(src); // fulfilled,result
+    script.onerror = (err) => reject(err); // rejected,error
+    document.head.append(script);
+  });
+}
+loadScript("./1.js").then(loadScript("./2.js")).then(loadScript("./3.js"));
+// .then是promise对象原型上的方法，每次返回一个promise实例，需要传递两个参数，如果没传返回一个空的promise对象，保证可以继续调用.then方法
+// promise.then(onFulfilled,onRejected)
+
+loadScript("./1.js")
+  .then(
+    () => {
+      return loadScript("./4.js");
+    },
+    (err) => {
+      console.log(err);
+    }
+  )
+  .then(
+    () => {
+      loadScript("./3.js");
+    },
+    (err) => {
+      console.log(err);
+    }
+  );
+
+// promise的静态方法
+Promise.resolve(42); // 包裹返回的静态值可以调用then方法
+Promise.reject(new Error("ss"));
+// catch也是实例的方法 catch异常处理.then().catch(err=>console.log(err))
+
+//异步的并行
+const p1 = Promise.resolve(1);
+const p2 = Promise.resolve(20);
+const p3 = Promise.resolve(3);
+Promise.all([p1, p2, p3]).then((value) => {
+  console.log(value);
+});
+Promise.race(); //先到先得
+const p1 = () => {
+  return new Promise((resolve, reject) => {
+    setTimeout(function () {
+      resolve(1);
+    }, 1000);
+  });
+};
+const p2 = () => {
+  return new Promise((resolve, reject) => {
+    setTimeout(function () {
+      resolve(2);
+    }, 3000);
+  });
+};
+Promise.race([p1(), p2()]).then((value) => {
+  console.log(value);
+});
+
+//Promise代码：
+const callAsync = (() => {
+  let pending = false;
+  let count = 1;
+  let textNode = document.createTextNode(count);
+  let tasks = [];
+  let nextTickHandler = () => {
+    pending = false;
+    let cbs = tasks.slice(0);
+    tasks = [];
+    cbs.forEach((cb) => cb());
+  };
+  let observer = new MutationObserver(nextTickHandler);
+  observer.observe(textNode, {
+    characterData: true,
+  });
+  let nextTick = () => {
+    count = (count + 1) & 1;
+    textNode.data = count;
+  };
+  return (fn, args, cb, onError) => {
+    let func = () => {
+      try {
+        cb ? cb(fn(args)) : fn(args);
+      } catch (err) {
+        onError(err);
+      }
+    };
+    tasks.push(func);
+    if (pending) return;
+    pending = true;
+    nextTick();
+  };
+})();
+
+const PENDING = "pending",
+  FULFILLED = "fulfilled",
+  REJECTED = "rejected",
+  isFunction = (fn) => typeof fn === "function";
+
+class MyPromise {
+  constructor(fn) {
+    //接收一个excutor执行函数为参数, excutor有两个参数resolve reject
+    this._status = PENDING; //初始状态
+    this._onFulfilledQueue = []; // 存储fulfilled状态对应的onFulfilled函数
+    this._onRejectedQueue = []; // 存储rejected状态对应的onRejected函数
+    this._value = null; // fulfilled状态时 返回的信息
+    this[Symbol.toStringTag] = "MyPromise";
+    try {
+      fn(this._resolve.bind(this), this._reject.bind(this)); //立即执行excutor
+    } catch (err) {
+      this._reject(err);
+    }
+  }
+  _resolve(value) {
+    //成功状态下接收的值
+    if (this._status !== PENDING) return;
+    this._status = FULFILLED;
+    const runFulfilled = (value) => {
+      let fn;
+      while ((fn = this._onFulfilledQueue.shift())) fn(value);
+    };
+    const runRejected = (error) => {
+      let fn;
+      while ((fn = this._onRejectedQueue.shift())) fn(error);
+    };
+    if (value instanceof MyPromise) {
+      value.then(
+        (res) => {
+          this._value = res;
+          runFulfilled(res);
+        },
+        (err) => {
+          this._value = err;
+          runRejected(err);
+        }
+      );
+    } else {
+      this._value = value;
+      runFulfilled(value);
+    }
+  }
+  _reject(error) {
+    //接收失败的原因
+    if (this._status !== PENDING) return;
+    this._status = REJECTED;
+    this._value = error;
+    let fn;
+    while ((fn = this._onRejectedQueue.shift())) fn(error);
+  }
+  then(onFulfilled, onRejected) {
+    //onFulfilled接收成功的值，onRejected接收失败的原因
+    onFulfilled = isFunction(onFulfilled) ? onFulfilled : (res) => res; //resolve(成功) onFulfilled调用
+    onRejected = isFunction(onRejected)
+      ? onRejected
+      : (err) => {
+          throw err;
+        }; //reject(失败)
+    return new MyPromise((onFulfilledNext, onRejectedNext) => {
+      const resolve = (value) => {
+        callAsync(
+          onFulfilled,
+          value,
+          (res) => {
+            if (res instanceof MyPromise) {
+              res.then(onFulfilledNext, onRejectedNext);
+            } else {
+              onFulfilledNext(res);
+            }
+          },
+          onRejectedNext
+        );
+      };
+      const reject = (error) => {
+        callAsync(
+          onRejected,
+          error,
+          (res) => {
+            if (res instanceof MyPromise) {
+              res.then(onFulfilledNext, onRejectedNext);
+            } else {
+              onFulfilledNext(res);
+            }
+          },
+          onRejectedNext
+        );
+      };
+      switch (this._status) {
+        case PENDING:
+          this._onFulfilledQueue.push(resolve);
+          this._onRejectedQueue.push(reject);
+          break;
+        case FULFILLED:
+          resolve(this._value);
+          break;
+        case REJECTED:
+          reject(this._value);
+          break;
+      }
+    });
+  }
+  catch(onRejected) {
+    //在链式写法中可以捕获前面then中发送的异常
+    return this.then(null, onRejected);
+  }
+  static resolve(value) {
+    return value instanceof MyPromise
+      ? value
+      : value && isFunction(value.then)
+      ? new MyPromise((res) => res()).then(() => new MyPromise(value.then))
+      : new MyPromise((res) => res(value));
+  }
+  static reject(error) {
+    return new MyPromise((resolve, reject) => reject(error));
+  }
+  static all(list) {
+    return new MyPromise((resolve, reject) => {
+      let values = [],
+        count = list.length;
+      list.forEach((item, index) => {
+        MyPromise.resolve(item).then((res) => {
+          values[index] = res;
+          --count == 0 && resolve(values);
+        }, reject);
+      });
+    });
+  }
+  static race(list) {
+    return new MyPromise((resolve, reject) => {
+      list.forEach((item) => MyPromise.resolve(item).then(resolve, reject));
+    });
+  }
+  static allSettled(list) {
+    return new MyPromise((resolve) => {
+      let count = list.length,
+        values = [];
+      list.forEach((item, index) => {
+        MyPromise.resolve(item).then(
+          (value) => {
+            values[index] = {
+              status: "fulfilled",
+              value,
+            };
+            --count == 0 && resolve(values);
+          },
+          (reason) => {
+            values[index] = {
+              status: "rejected",
+              reason,
+            };
+            --count == 0 && resolve(values);
+          }
+        );
+      });
+    });
+  }
+  finally(cb) {
+    return this.then(
+      (value) => MyPromise.resolve(cb()).then(() => value),
+      (reason) =>
+        MyPromise.resolve(cb()).then(() => {
+          throw reason;
+        })
+    );
+  }
+}
+```
+
+- Reflect 反射机制：非反射先指定方法，反射是执行过程中根据条件选调用那个方法
+
+  > 是一个内置的对象，它提供拦截 JavaScript 操作的方法
+
+  ```js
+  const obj = { name: "abc", age: 18 };
+  // 旧：
+  "name" in obj ? true : false;
+  delete obj[age];
+  Object.keys(obj);
+
+  Reflect.has(obj, "name");
+  Reflect.deleteProperty(obj, "age");
+  Reflect.ownKeys(obj);
+  console.log(Reflect.apply(Math.floor, null, [4.72]));
+  console.log(
+    Reflect.apply(price > 100 ? Math.floor : Math.ceil, null, [price])
+  );
+  let d = Reflect.construct(Date, []);
+  console.log(d.getTime(), d instanceof Date);
+  const student = {};
+  const r = Reflect.defineProperty(student, "name", { value: "Mike2" });
+  console.log(student, r);
+  const obj = { x: 1, y: 2 };
+  Reflect.deleteProperty(obj, "x");
+  console.log(obj);
+  console.log(Reflect.get(obj, "x"));
+  console.log(Reflect.get([3, 4], 1)); //4
+  console.log(Object.getOwnPropertyDescriptor(obj, "y"));
+  let d = new Date();
+  console.log(Reflect.getPrototypeOf(d)); //看原型上的方法
+  console.log(Reflect.has(obj, "y"));
+  Object.freeze(obj); //使obj不可以扩展
+  console.log(Reflect.isExtensible(obj)); //是不是可扩展的
+  // 自身的属性
+  console.log(Reflect.ownKeys(obj));
+  console.log(Reflect.ownKeys([1, 2])); //返回索引和length
+  Reflect.preventExtensions(obj); //禁止扩展
+  Reflect.set(obj, "z", 4);
+  Reflect.set(arr, 2, "goose");
+  Reflect.setPrototypeOf(arr, String.prototype); //修改原型对象
+  ```
+
+- Proxy 代理
+
+  ```js
+  // Proxy保护原始信息
+  let o = {
+    name: 'xiaomi',
+    price: 1999
+  }
+  let d = new Proxy(o, {
+    get (target, key) {
+      if (key === 'price') {
+        return target[key] + 20
+      } else {
+        return target[key]
+      }
+    }
+    set (target, key, value) {
+      return false
+    }
+  })
+  console.log(d.price, d.name)
+
+  // es5拦截处理
+  for (let [key] of Object.entries(o)) {
+    Object.defineProperty(o, key, {
+      writable: false
+    })
+  }
+
+  // 监听错误
+  window.addEventListener('error', (e) => {
+    console.log(e.message)
+    // report('./')
+  }, true)
+  ```
+
+- Symbol：不会重复的值
+
+  ```js
+  let name1 = Symbol("name");
+  let name2 = Symbol("name");
+  console.log(name1 === name2); // false
+
+  const name = Symbol();
+  const person = {
+    [name]: "abc",
+    say() {
+      console.log(this[name]);
+    },
+  };
+  person[name]; // 'abc'
+  Symbol.for(); // 内部接收字符串  Symbol.for(true)===Symbol.for('true')  // √
+  ```
+
+- 遍历器 iterator 调用 next()方法才能继续执行
+  ```js
+  let arr = ["a", "b", "c"];
+  let iterator = arr[Symbol.iterator()];
+  console.log(iterator.next()); // {value:'a',done:false}
+  console.log(iterator.next()); // {value:'b',done:false}
+  console.log(iterator.next()); // {value:'c',done:false}
+  console.log(iterator.next()); // {value:undefined,done:true}
+  console.log(iterator.next()); // {value:undefined,done:true}
+  ```
+- Generator 生成器 带\*的 fn
+
+  - 带有\*的函数
+  - 函数内部使用 yield 暂停执行，遇到 yield 执行就停下来了,yield 后的值作为 next 的 value
+  - 调用时用 next()恢复函数执行，找函数中的 yield 或者结尾函数暂停
+
+  ```js
+  function * fn(){
+    console.log('foo');
+    returen 'bar'
+  }
+  // 生成器执行生成一个iterator
+  let it = fn()
+  let res = it.next()
+  console.log(res)
+
+  // generator中使用yield分段执行：
+  function * fn(){
+    yield 1;
+    yield 2;
+    yield 3;
+  }
+  let it = fn;
+  console.log(it.next()) // {value:1,done:false}
+  console.log(it.next()) // {value:2,done:false}
+  console.log(it.next()) // {value:3,done:false}
+  console.log(it.next()) // {value:undefined,done:true}
+
+  for (let v of it){
+    console.log(v)
+  }  //1 2 3  只会打印done为false的值
+
+  function * loop () {
+    for (let i = 0; i < 5; i++) {
+      yield console.log(i) //yield关键词
+    }
+  }
+  const l = loop()
+  // 场景：抽奖 一个一个抽/自定义遍历器
+  l.next() 0
+  l.next() 1
+  l.next() 2
+  l.next() 3
+  l.next() 4
+  l.next()
+
+  function * gen () {
+    let val
+    val = yield 1
+    console.log(val)
+  }
+  const l = gen()
+  l.next() // 遇到 yield 执行停下来了 后边是 1 所以不打印
+  l.next() //undefined 函数已经结束还没找到 yield，yield 表达式没有值返回 undefined
+
+  function * gen () {
+    let val
+    val = yield * [1, 2, 3] //加\*说明后边是一个可遍历的对象
+    console.log(val)
+  }
+  // next()：返回当前数据的 value 和是否结束{value:1,done:false}
+  l.next(10)
+  console.log(l.return(100)) //return 提前结束{value:100,done:true}
+  l.next(20) // 20 通过 next 传值 修改 yield 的返回值
+
+  function * gen () {
+    while (true) {
+      try {
+        yield 1
+      } catch (e) {
+        console.log(e.message)
+      }
+    }
+  }
+  const g = gen()
+  console.log(g.next())
+  console.log(g.next())
+  console.log(g.next())
+  console.log(g.next())
+  g.throw(new Error('ss')) //继续执行不会影响类似 continue
+  console.log(g.next())
+  ```
+
+- Module：模块化设计
+
+  ```js
+  // 导出
+  export const name = 'hello'
+  export let addr = 'Beijing'
+  export var list = [1, 2, 3]
+  // 导入
+  import { name, addr, list } from './name.js'
+
+  // 一起导出
+  export default name
+  export {
+    addr,
+    list
+  }
+  import name, { addr, list } from './name.js'
+
+  // 导入改名：默认导出可以直接改名字，{}导出要用as改名
+  import name2, { addr as addr2, list } from './name.js'
+
+  // 函数导出
+  const say = (content) => {
+    console.log(content)
+  }
+  const run = () => {
+    console.log('i am running')
+  }
+  //引入函数
+  import { say, run } from './say.js'
+
+  export default say
+  export {
+    run
+  }
+  //默认导出放到花括号外
+  import say { run } from './say.js'
+
+  // 默认导出对象
+  export default {
+    code:1,
+    message:'success'
+  }
+  import obj form './obj.js'
+
+  // 导出多个对象：
+  const data = {
+    code: 1,
+    message: 'success'
+  }
+  const des = {
+    age: 20,
+    addr: 'Beijing'
+  }
+  export default {
+    data,
+    des
+  }
+  import obj from './data.js'
+  let {data, des} = obj
+
+  //类的默认导出
+  export class Test {
+    constructor () {
+      this.id = 6
+    }
+  }
+  export class Animal {
+    constructor () {
+      this.name = 'dog'
+    }
+  }
+  export default class People {
+    constructor () {
+      this.id = '132'
+    }
+  }
+  import { Test, Animal  }form './test.js'
+
+  // 导入全部模块起一个别名
+  import * as Mod from './mod'
+  let test = new Mod.Test()
+  console.log(test.id)
+  let animal = new Mod.Animal()
+  console.log(animal.name)
+  let people = new Mod.default()
+  console.log(people.id)
+  ```
+
+- ES8：async await
+- ES9：For await of :异步集合遍历、Promise.finally()
+
+  ```js
+  function Gen(time) {
+    return new Promise((resolve, reject) => {
+      setTimeout(function () {
+        resolve(time);
+      }, time);
+    });
+  }
+  async function test() {
+    let arr = [Gen(2000), Gen(100), Gen(3000)]; //都是异步操作
+    for (let item of arr) {
+      console.log(Date.now(), await item.then(console.log));
+    }
+  }
+
+  async function test() {
+    let arr = [Gen(2000), Gen(100), Gen(3000)];
+    for await (let item of arr) {
+      console.log(Date.now(), item);
+    }
+  }
+  ```
+
+- ES9 中 Object 的 Rest 和 Spread
+  ```js
+  const output = {
+    ...input, // spread是拷贝的形式做的  不是引用地址，修改原对象不影响现在的
+    ...test,
+    c: 3,
+  };
+  ```
+
+### commonjs 和 es6 模块化的区别
+
+> - CommonJS 模块输出的是一个值的拷贝，ES6 模块输出的是值的引用。
+> - CommonJS 模块是运行时加载，ES6 模块是编译时输出接口。
+> - CommonJs 是单个值导出，ES6 Module 可以导出多个
+> - CommonJs 是动态语法可以写在判断里，ES6 Module 静态语法只能写在顶层
+> - CommonJs 的 this 是当前模块，ES6 Module 的 this 是 undefined
+
+- CommonJS（运行时同步加载的，拷贝模块中的对象，浅拷贝）
+
+  - 模块可以多次加载，但只会在第一次加载，之后会被缓存，引入的是缓存中的值
+  - 引入使用：require("path")
+  - 1.如果是第三方模块 只需要填入模块名
+  - 2.自己定义的模块 需要使用相对路径或者绝对路径
+  - 导出模块使用：exports.xxx 或 module.exports.xxx 或 module.exports=xxx 或 this.xxx
+  - ！！不管是使用 exports 还是 this  ，都需要用点语法的形式导出，因为 他们两个是 module. - exports 的指针 重新赋值将会切断关联
+
+- Es6 模块（【动态只读引用】，编译时异步加载，有一个独立的模块依赖的解析阶段。ES6 Module 是对模块的引⽤,即 ES6 Module 只存只读，不能改变其值，具体点就是指针指向不能变，类似 const 。）
+  - 默认导出    export default 变量或者函数或者对象
+  - 默认引入   import name from "相对或绝对路径"
+  - 导出的名字和引入的名字可以不一致
+  - 按需导出   export 需要声明 变量用 const var let  函数用 function
+  - 按需引入   import {变量名或函数名} form "路径"
+  - 全部引入 使用   import \* as 自定义 name "路径"
+  - 会将默认导出和按需导出 全部引入
+
+### js 宏任务和微任务
+
+> 在挂起任务时，JS 引擎会将所有任务按照类别分到这两个队列中，首先在 macrotask 的队列（这个队列也被叫做 task queue）中取出第一个任务，执行完毕后取出 microtask 队列中的所有任务顺序执行；之后再取 macrotask 任务，周而复始，直至两个队列的任务都取完。
+
+- 同步任务：进入主进程执行
+- 异步任务：进入 Event table 注册函数，当指定事情完成时，ET 会将任务移到 Event Queue，主进程任务执行完毕为空，回去 EQ 读取，进入主进程执行，不断重复这个过程，就是 js 的事件循环（Event Loop）
+
+- 宏任务：setTimeout、setInterval、requestAnimationFrame(web)、setImmediate(node)
+- 微任务：Promise.then catch finally、MutationObserver(web)、process.nextTick(node)
+
+```js
+setTimeout(() => {
+  console.log("内层宏事件4"); //执行后 回调一个宏事件
+}, 0);
+console.log("外层宏事件1");
+new Promise((resolve) => {
+  console.log("外层宏事件2");
+  resolve();
+})
+  .then(() => {
+    console.log("微事件1");
+  })
+  .then(() => {
+    console.log("微事件2");
+  });
+console.log("外层宏事件3");
+// 外层宏事件1 外层宏事件2 外层宏事件3 微事件1 微事件2 内层宏事件4
+// 首先浏览器执行js进入第一个宏任务进入主线程, 遇到 setTimeout  分发到宏任务Event Queue中
+// 遇到 console.log() 直接执行 输出 外层宏事件1
+// 遇到 Promise， new Promise 直接执行 输出 外层宏事件2
+// 遇到 console.log() 直接执行 输出 外层宏事件3
+// 执行then 被分发到微任务Event Queue中
+// 第一轮宏任务执行结束，开始执行微任务 打印 '微事件1' '微事件2'
+// 第一轮微任务执行完毕，执行第二轮宏事件，打印setTimeout里面内容'内层宏事件4'
+
+console.log("1"); //主线程直接执行
+setTimeout(function () {
+  //丢到宏事件队列中
+  console.log("2"); //1
+  process.nextTick(function () {
+    console.log("3"); //3
+  });
+  new Promise(function (resolve) {
+    console.log("4"); //2
+    resolve();
+  }).then(function () {
+    console.log("5"); //4
+  });
+});
+process.nextTick(function () {
+  console.log("6"); //微事件1
+});
+new Promise(function (resolve) {
+  console.log("7"); //主线程直接执行
+  resolve();
+}).then(function () {
+  console.log("8"); //微事件2
+});
+//丢到宏事件队列中
+setTimeout(function () {
+  console.log("9"); //1
+  process.nextTick(function () {
+    console.log("10"); //3
+  });
+  new Promise(function (resolve) {
+    console.log("11"); //2
+    resolve();
+  }).then(function () {
+    console.log("12"); //4
+  });
+});
+// 浏览器完整的输出为1，7，6，8，2，4，3，5，9，11，10，12
+// 首先浏览器执行js进入第一个宏任务进入主线程, 直接打印console.log('1')
+// 遇到 setTimeout  分发到宏任务Event Queue中
+// 遇到 process.nextTick 丢到微任务Event Queue中
+// 遇到 Promise， new Promise 直接执行 输出 console.log('7');
+// 执行then 被分发到微任务Event Queue中
+// 第一轮宏任务执行结束，开始执行微任务 打印 6,8
+// 第一轮微任务执行完毕，执行第二轮宏事件，执行setTimeout
+// 先执行主线程宏任务，在执行微任务，打印'2,4,3,5'
+// 在执行第二个setTimeout,同理打印 '9,11,10,12'
+// 总结：先执行主进程的：宏任务==》微任务，执行下一队列
+```
+
+### 异步和单线程
+
+- js 是单线程，只能做一件事
+- 浏览器和 nodejs 已经支持 js 启动进程，如 web worker
+- JS 和 DOM 渲染公用一个线程，因为 JS 可修改 DOM 结构（一个进行另一个必须停止）
+- 异步：（callback 回调函数）不阻塞代码执行，场景：1、网络请求 2、定时器
+- 同步：alert()卡住 阻塞代码执行
+
+### js 操作 DOM
+
+```js
+document.getElementById("div1");
+doecument.getElemntsdByTagName("div"); //集合
+document.getElementsByClassName("div1"); //集合
+document.querySelectorAll("p"); //集合
+//兼容所有浏览器获取屏幕宽高
+let curWidth =
+  document.documentElement.clientWidth || document.body.clientWidth;
+let curHeight =
+  document.documentElement.clientHeight || document.body.clientHeight;
+```
+
+- 节点类型
+  |名称|nodeType |nodeName |nodeValue（节点值）
+  |----|----|----|----|
+  |元素 |1 |大写标签名 |null
+  |文本 |3 |#text |文本内容
+  |注释 |8 |#comment |注释内容
+  |document |9 |#document |null
+
+- DOM 中的节点关系属性:
+
+  - childNodes 获取所有子节点,包含元素，文本，换行，空格, 注释等 类数组类型
+  - children 获取所有元素子节点（标签元素）低版本浏览器可以拿到注释节点 ie8
+  - firstChild 获取第一个子节点
+  - fistElementChild 获取第一个元素子节点
+  - lastChild 获取所有的子节点中的而最后一个
+  - lastElementChild
+  - parentNode 获取父亲节点
+  - previousSibling 获取哥哥（上一个）节点 （文本，注释，元素）
+  - previousElementSibling 哥哥的元素节点
+  - nextSibling 获取弟弟节点 （文本，注释，元素）
+  - nextElementSibling 弟弟的元素节点
+  - HTML 中获取不到的最差也是 null，没见过 undefined。
+
+- property：用 js 属性操作的一种形式，对 js 变量进行修改，修改对象属性，不会体现在 html 结构中 `p1.style.width(className)`设置或者获取页面样式
+- attr：设置标签属性，对 dom 节点属性进项修改，修改 html 属性，会体现在 html 中
+  ```js
+  p1.setAttribute("data-name", "icc");
+  p1.getetAttribute("data-name"); //icc
+  p1.setAttribute("style", "color:red");
+  ```
+- property 会比 attr 避免一些重复的 dom 渲染，尽量用 property
+
+  ```js
+  // 新建节点：createElement
+  const p1 = document.createElement("p");
+  p1.innerHtml = "this is p1";
+  // 插入和移动节点：appendChild
+  div1.appendChild(p1);
+  // 获取父元素：parentNode
+  console.log(p1.parentNode);
+  // 获取子元素列表：childNodes
+  console.log(div1.childNodes); //包括文本元素
+  // a 你要把谁插入 b 插入谁前面 父元.insertBefore(a,b)
+  insertBefore(a, b);
+  // 参数是要删除的元素 parentNode.removeChild(oA); 父级删除
+  div1.removeChild(child[0]);
+  // a 谁来替换 new b 替换谁 old 重点就是一动了父元.replaceChild(a,b)
+  replaceChild(a, b);
+  // 克隆节点 true：连内容一起拷贝
+  cloneNode() / cloneNode(true);
+  // 获取 p 标签
+  const childP = Array.prototype.slice.call(div.childNodes).filter((child) => {
+    if (child.nodeType === 1) {
+      return true;
+    }
+    return false;
+  });
+  ```
+
+- DOM 性能：耗费 cpu
+
+  - 1、做一个缓存：把 dom 节点付给一个变量
+  - 2、将频繁操作的改为一次性操作
+    ```js
+    // 文档碎片
+    // 创建文件片段，此时没有插入 DOM 中
+    const frag=document.createDocumentFragment()
+    for(let i=0,i<10,i++){
+      const li = document.createElement('li')
+      li.innerHTML='this is li'
+      frag.appendChild(li)
+    }
+    // 一次性插入
+    nodeList.append(frag)
+    ```
+
+- BOM
+  ```js
+  // 如何识别浏览器类型 navigator screen location history
+  const ua = navigator.userAgent;
+  const isChrome = ua.indexOf("Chrome");
+  console.log(screen.width); //屏幕的宽高
+  location.href; //网址
+  location.protocol; //协议
+  location.host; //域名
+  location.search; //查询参数
+  location.hash;
+  location.pathname;
+  history.back();
+  history.forward();
+  ```
+
+### Ajax (Asynchronous JavaScript And XML)
+
+```js
+// ajax: XMLHttpRequest
+const xhr = new XMLHttpRequset();
+xhr.open("GET", "/data/test.json", true); // true是异步的
+xhr.onreadystatechange = function () {
+  if (xhr.readyState === 4) {
+    if (xhr.status === 200) {
+      console.log(xhr.responseTest);
+    }
+  }
+};
+xhr.send(null);
+// post请求：
+const postData = {
+  userName: "aa",
+  password: 123,
+};
+xhr.send(JSON.stringify(postData));
+```
+
+- xhr.readyState：
+
+  - 0 - 未初始化 还没掉用 send()方法
+  - 1 - 载入中 已调用 send 方法正在发送请求
+  - 2 - 载入完成 send 方法执行完成，已经接收到全部相应内容
+  - 3 - 交互 正在解析相应内容
+  - 4 - 完成 相应内容解析完成，可以在客户端调用
+
+- 同源策略：浏览器的要求，网页和 server 必须同源，协议、域名、端口都一致。
+
+  - img 可以用于统计打点，可使用第三方统计服务
+  - link、script 可以使用 CDN，CDN 一般都是外域
+  - script 可以实现 JSONP，也需要 server 端配合，服务端可以拼接任何数据返回
+
+- 解决跨域
+
+  - jsonp 的原理就是利用`<script>`标签没有同源策略限制，通过`<script>`标签 src 属性，发送带有 callback 参数的 GET 请求，服务端将接口返回数据拼凑到 callback 函数中，返回给浏览器，浏览器解析执行，从而前端拿到 callback 函数返回的数据。只能发送 get 一种请求
+  - 跨域资源共享（CORS）Access-Control-Allow-Origin：\*
+  - 代理 nginx vue 的 proxy
+  - postMessage
+  - webSocket
+
+  ```js
+  // jsonp 只能发送get一种请求
+  let script = document.createElement('script');
+  script.type = 'text/javascript';
+  // 传参一个回调函数名给后端，方便后端返回时执行这个在前端定义的回调函数
+  script.src = 'http://localhost:8080/login?user=admin&callback=handleCallback';
+  document.head.appendChild(script);
+  // 回调执行函数
+  function handleCallback(res) {
+    console.log(JSON.stringify(res));
+  }
+  // 服务端返回如下（返回时即执行全局函数）：
+  handleCallback({"success": true, "user": "admin"})
+
+  // jsonp
+  window.callback = function (data) {
+    console.log(data);
+  };
+  <script src="http://localhost:8080/jsonp.js"></script>;
+  //jsonp.js的内容：执行这个函数吧内容带回去
+  callback({ name: "abc" });
+
+  // cors 服务端设置可以跨域 CORS请求设置的响应头字段，都以 Access-Control-开头,Access-Control-Allow-Origin：必选
+
+  // #proxy服务器
+  `server {
+      listen       81;
+      server_name  www.domain1.com;
+
+      location / {
+          proxy_pass   http://www.domain2.com:8080;  #反向代理
+          proxy_cookie_domain www.domain2.com www.domain1.com; #修改cookie里域名
+          index  index.html index.htm;
+
+          # 当用webpack-dev-server等中间件代理接口访问nignx时，此时无浏览器参与，故没有同源限制，下面的跨域配置可不启用
+          add_header Access-Control-Allow-Origin http://www.domain1.com;  #当前端只跨域不带cookie时，可为*
+          add_header Access-Control-Allow-Credentials true;
+      }
+  }`
+
+
+  let rdcAjax = function (url, method, type, data) {
+    if (!url) {
+      return Promise.reject(new Error("url 不能为空！"));
+    }
+    if (!method) {
+      method = "GET";
+    }
+    if (!type) {
+      type = "application/json";
+    }
+    if (
+      type === "application/x-www-form-urlencoded" &&
+      typeof data === "object"
+    ) {
+      let str = "";
+      Object.keys(data).forEach((x) => {
+        str += `${x}=${data[x]}&`;
+      });
+      data = str.replace(/&$/, "");
+    }
+    return new Promise((resolve, reject) => {
+      let xhr = new XMLHttpRequest();
+      xhr.open(method, url);
+      xhr.setRequestHeader("Content-Type", type);
+      xhr.setRequestHeader("X-ENT", "rdc");
+      xhr.setRequestHeader("access-token", cfg.accessToken);
+      xhr.send(data || null);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === this.HEADERS_RECEIVED) {
+          console.log(`Content-Type: ${xhr.getResponseHeader("Content-Type")}`);
+        } else if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            return resolve(xhr.response);
+          } else {
+            return reject(xhr.response);
+          }
+        }
+      };
+    });
+  };
+  // jquery中使用ajax
+  $.ajax({
+    type:'POST',
+    contentType:'application/json;charset=UTF-8',
+    url:'http://127.0.0.1/admin/list',
+    data:JSON.stringify(list),
+    jsonpCallback: "handleCallback",  // 自定义回调函数名
+    success:function(){},
+    error:function(){}
+  })
+  fetch(url).then()：//返回的Promise不会标记为reject，及时返回的404和500，只有网络故障时候回reject，不会从服务端发送和接收任何cookies，必须设置credentials选项
+  //axios:axios.get().then()
+  ```
+
+### 存储
+
+- cookie：本身用于浏览器和 server 通讯，借用来做本地存储，可用 document.cookie=”a=100”修改，最大限制 4kb，每次都要发送到服务器，增加请求数据量，
+- localStorage：永久存储，H5 专门设计的存储，最大可存 5M，API 简单：setItem getItem，不随 http 请求发送
+- sessionStorage：只存在当前会话，浏览器关闭就清空
+
+### linux 命令：
+
+- ssh user@192.168.2.97 => 回车输入密码
+- ls 查看文件夹
+- ls -a 查看所有-all
+- ll 车看列表
+- clear
+- mkdir file
+- rm -rf file 删除文件夹
+- cd dist
+- mv 1.js 2.js 修改文件名
+- mv 1.js ../../product/1.js 移动文件
+- cp 1.js 2.js 拷贝
+- rm a1.js 删除文件 a1.js
+- touch a2.js 创建文件
+- vi d.js 编辑文件 i 输入 :wq 写入退出 q!强制退出不保存
+- vim 有的话直接打开，没有的话创建打开
+- cat package.json 查看
+- head package.json 查看头几行
+- tail package.json 查看末尾几行
+- grep 'babel' package.json 查找关键字
+
+### JS 中的垃圾
+
+> - 1、js 内存管理是自动的
+> - 2、对象不被引用时就是垃圾
+> - 3、对象不能从根上访问到是垃圾（不可达）
+
+> GC：垃圾回收机制的简写，它可以找到内存中的垃圾并释放和回收空间
+
+- GC 算法：
+
+  - 1、引用计数：设置引用数，判断当前引用数是否为 0
+
+    > 引用计数器 ==> 引用关系改变修改引用数字 ==> 引用数字为 0 立即回收
+
+    - 优点：发现垃圾立即回收，最大限度较少程序暂停
+    - 缺点：无法回收循环引用对象，时间开销大
+      ```js
+      function fn() {
+        const obj1 = {};
+        const obj2 = {};
+        boj1.name = obj2;
+        obj2.name = obj1;
+      }
+      fn();
+      ```
+
+  - 2、标记清除
+    > 分标记和清除两个阶段，遍历所有对象找标记活动对象，遍历所有对象清除没有标记的对象，回收相应空间
+    - 优点：解决对象循环引用操作
+    - 缺点：空间碎片化，回收的地址不连续
+  - 3、标记整理
+    > 标记清除的增强，清除阶段先执行整理，移动对象的位置
+    - 缺点：不会立即回收垃圾对象
+    - V8 引擎：采用及时编译所以快 内存设限：1.5g/800m
+  - 分代回收
+
+    > 内存分新生代、老生代，空间复制、标记清除、标记整理、标记增量
+
+    - 新生代（From 使用空间，To 空闲空间）：存活时间较短的对象，小空间存储（32M/16M）
+    - 新生代回收采用复制算法 + 标记整理，活动对象在 from 空间，标记整理后将活动对象拷贝到 to 空间，from 与 to 交换空间完成释放。（复制算法：空间换时间），一轮 GC 还存活的新生代需要晋升到老升代空间，to 空间的使用超过 25%也会晋升
+    - 老生代：主要使用标记清除进行 GC，当新生代晋升空间不足在进行标记整理，标记增量进行效率优化。（标记增量和程序是交替执行的，执行一部分，标记一部分）
+
+  - Performance 工具监控内存
+  - 监控内存方式：
+    - 内存泄漏：内存持续升高，没有下降
+    - 内存膨胀：多数设备上存在性能问题
+    - 频繁垃圾回收：内存变化图分析
+    - 浏览器任务管理器：shift+esc
+    - Timeline 时序图记录：Performance
+    - 堆快照查找分离 DOM：控制台内存，堆快照
+    - 判断是否存在频繁的垃圾回收：Timeline 频繁升降，任务管理去数据频繁增加减小
+
+- 代码优化：
+  - 1、慎用全局变量：作用域链顶端，一直存在执行栈到结束，局部作用域出现同名污染全局
+  - 2、缓存全局变量：获取 dom 存在变量里
+  - 3、通过原型新增方法
+  - 4、避开闭包陷阱
+  - 5、避免属性访问方法的使用
+  - 6、for 循环的优化，选择最优的循环方法
+  - 7、文档碎片，克隆优化节点
+  - 8、直接用字面量替换 new Object 定义
+
+### JS 中捕获异常：
+
+- 1、手动捕获 try{ }catch(err){ }finally{ }
+- 2、自动捕获：
+
+```js
+window.onerror = function (message, source, lineNum, colNum, error) {
+  // 对于跨域的js，如CDN，不会有详细的报错
+  // 对于压缩的js，需要配合sourceMap 反查到未压缩的行和列
+};
+```
+
+### RAF requestAnimationFrame
+
+> 想要动画流畅，更新频率要 60 帧/s，即 16.67ms 更新一次视图，setTimeout 要手动控制频率，而 RAF 浏览器会自动控制，后台标签或隐藏 iframe 中，RAF 会暂停，而 setTimeout 依然执行
+
+```js
+// 3s把宽度从100px变为640px，即增加540px
+// 60帧/s，3s 180帧，每次变化3px
+const $div1 = $("#div1");
+let curWidth = "100px";
+const maxWidth = "640px";
+function animate() {
+  curWidth = curWidth + 3;
+  $div1.css("width", curWidth);
+  if (curWidth < maxWidth) {
+    setTimeout(animate, 16.7); //手动控制时间
+    //window.requestAnimationFrame(animate) 浏览器自动控制时间
+  }
+}
+animate();
+```
+
+### 浏览器缓存：两个地方用到了缓存，DNS 缓存和页面资源缓存
+
+- 1.DNS 缓存比较简单，就是在浏览器本地把对应的 IP 和域名关联起来
+  > 浏览器缓存->系统缓存->本地 host 文件（尽量设置为只读）-> DNS 系统调用请求本地域名服务器 localDNS（LDNS）来解析域名（80%都能找到）->直接请求
+- 2.浏览器的资源缓存
+
+  - 强缓存
+    > 不请求服务器，直接从缓存中读取，chrome=>Network 可以看到该请求返回 200，并且 Size 显示 from disk cache 或 from memory cache。强缓存可以通过设置两种 HTTP Header 实现：Expires 和 Cache-Control
+    - Expires：缓存过期时间，指定资源到期的时间，是服务器端的具体的时间点。
+      > Expires=max-age + 请求时间，需要和`Last-modified`结合使用。Expires 是 Web 服务器响应消息头字段，在响应 http 请求时告诉浏览器在过期时间前浏览器可以直接从浏览器缓存取数据，而无需再次请求。
+      >
+      > Expires 是 HTTP/1 的产物，受限于本地时间，如果修改本地时间，可能会造成缓存失效。
+    - Cache-Control：是 HTTP/1.1 的产物。比如设置 Cache-Control:max-age=300，5 分钟内再次加载资源，就会命中强缓存。
+      > cache-control 的更多选项：
+      >
+      > no-cache：表示不使用 Cache-Control 的缓存控制方式做前置验证，而是使用 Etag 或者 Last-Modified 字段来控制缓存。设置了 no-cache 之后，并不是说浏览器就不再缓存数据，只是浏览器在使用缓存数据时，需要先确认一下数据是否还跟服务器保持一致。使用的协商缓存
+      >
+      > no-store：所有内容都不会被缓存，即不使用强制缓存，也不使用协商缓存
+    - 区别：Expires 是 http1.0 的产物，Cache-Control 是 http1.1 的产物，两者同时存在的话，Cache-Control 优先级高于 Expires。
+    - 强缓存判断是否缓存的依据来自于是否超出某个时间或者某个时间段，而不关心服务器端文件是否已经更新，这可能会导致加载文件不是服务器端最新的内容，此时我们需要用到协商缓存策略。
+  - 协商缓存
+
+    > 就是强缓存失效后，浏览器携带缓存标识向服务器发起请求，由服务器根据缓存标识决定是否使用缓存的过程，主要有以下两种情况：
+    >
+    > 协商缓存生效，返回 304 和 Not Modified
+    >
+    > 协商缓存失效，返回 200 和请求结果
+    >
+    > 协商缓存通过设置两种 HTTP header 实现 Last-Modified 和 ETag
+
+    - Last-Modified（服务端返回）和 If-Modified-Since（请求时候带上）
+      > 浏览器在第一次访问资源时，服务器返回资源的同时，在 response header 中添加 Last-Modified 的 header，表示资源在服务器上的最后修改时间，浏览器接收后缓存文件和 header； Last-Modified: Sun, 31 May 2020 05:28:04
+      >
+      > 浏览器下次请求资源，检测到 Last-Modified 这个 header，添加 If-Modified-Since 这个 header，值就是 Last-Modified 中的值；服务器会根据 If-Modified-Since 中的值与服务器中这个资源的最后修改时间对比，如果没有变化，返回 304 和空的响应体，直接从缓存读取，如果 If-Modified-Since 的时间小于服务器中这个资源的最后修改时间，说明文件有更新，于是返回新的资源文件和 200 状态码
+      >
+      > Last-Modified 弊端：
+      >
+      > - 1.本地打开缓存文件，即使没有对文件进行修改，也会造成 Last-Modified 被修改，服务端不能命中缓存导致发送相同的资源
+      > - 2.Last-Modified 只能以秒计时，如果在 1s 时间内修改完成文件，那么服务端会认为资源还是命中了，不会返回正确的资源
+      >
+      > 所以在 HTTP / 1.1 出现了 ETag 和 If-None-Match
+    - ETag 和 If-None-Match
+
+      > 流程类似上面。Etag 是服务器响应请求时，返回当前资源文件的一个唯一标识(由服务器生成)，只要资源有变化，Etag 就会重新生成。浏览器在下一次加载资源向服务器发送请求时，会将上一次返回的 Etag 值放到 request header 里的 If-None-Match 里，服务器只需要比较客户端传来的 If-None-Match 跟自己服务器上该资源的 ETag 是否一致，就能很好地判断资源相对客户端而言是否被修改过了。如果服务器发现 ETag 匹配不上，那么直接返回 200，将新的资源（当然也包括了新的 ETag）发给客户端；如果 ETag 是一致的，则直接返回 304，客户端直接使用本地缓存即可。
+
+    - 两者对比：Last-Modified 是 HTTP/1.0 的产物，而 Etag 是 HTTP/1.1 的产物在精确度上，Etag 要优于 Last-Modified。在性能上，Etag 要逊于 Last-Modified，毕竟 Last-Modified 只需要记录时间，而 Etag 需要服务器通过算法来计算出一个 hash 值。在优先级上，服务器校验优先考虑 Etag
+
+  - 总结：强制缓存优先于协商缓存，若强制缓存生效则直接使用缓存，若不生效则进行协商缓存，协商缓存由服务器决定是否使用缓存，若协商缓存失效，那么代表该请求的缓存失效，返回 200，重新返回资源和缓存标识，再存入浏览器缓存中；生效则返回 304，继续使用缓存。
+  - 用户行为对浏览器缓存的影响：
+    - 1.地址栏输入地址： 查找 disk cache 中是否有匹配。有则使用；没有则发送网络请求。
+    - 2.普通刷新 (F5)：因为 TAB 并没有关闭，因此 memory cache 是可用的，会被优先使用，其次是 disk cache。
+    - 3.强制刷新 (Ctrl + F5)：浏览器不使用缓存，因此发送的请求头部均带有 Cache-control: no-cache(为了兼容，还带了 Pragma: no-cache),服务器直接返回 200 和最新内容。
+
+### babel 编译原理
+
+- babylon 将 ES6/ES7 代码解析成 AST
+- babel-traverse 对 AST 进行遍历转译，得到新的 AST
+- 新 AST 通过 babel-generator 转换成 ES5
+
+### 函数柯里化
+
+> 在一个函数中，首先填充几个参数，然后再返回一个新的函数的技术，称为函数的柯里化。通常可用于在不侵入函数的前提下，为函数 预置通用参数，供多次重复调用。
+
+```js
+const add = function add(x) {
+  return function (y) {
+    return x + y;
+  };
+};
+const add1 = add(1);
+add1(2) === 3;
+add1(20) === 21;
+```
