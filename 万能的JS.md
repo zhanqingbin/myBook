@@ -444,7 +444,7 @@ function deepClone(obj = {}) {
   function debounce(f, wait) {
     let timer;
     return (...args) => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         f(...args);
       }, wait);
@@ -1085,7 +1085,7 @@ man.on("失恋", saveMoney); //失恋 ，绑定一个函数方法
 
 ### 事件
 
-![avatar](https://github.com/zhanqingbin/myBook/blob/master/images/js%E4%BA%8B%E4%BB%B6%E7%B1%BB.png?raw)
+![avatar](https://github.com/zhanqingbin/myBook/blob/master/images/js%E4%BA%8B%E4%BB%B6%E7%B1%BB.png?raw=)
 
 - 捕获和冒泡：事件捕获是为了逐层确定事件的来源,事件冒泡是为了逐级响应事件
 - 在 ie 中，document.getElementById("#test").attachEvent(type,listener);
@@ -1166,6 +1166,47 @@ function sum(base, ...nums) {
 - spread 操作 `sum(...data)`
 
 - 箭头函数
+
+  - 什么时候不能使用箭头函数
+
+    ```js
+    // 定义对象的方法
+    const calculator = {
+      array: [1, 2, 3],
+      sum: () => {
+        console.log(this === window); // => true
+        return this.array.reduce((result, item) => result + item);
+      },
+    };
+    console.log(this === window); // => true
+    // Throws "TypeError: Cannot read property 'reduce' of undefined"
+    calculator.sum();
+
+    // 定义事件回调函数
+    const button = document.getElementById("myButton");
+    button.addEventListener("click", () => {
+      console.log(this === window); // => true
+      this.innerHTML = "Clicked button";
+    });
+
+    // 定义原型的方法
+    function Cat(name) {
+      this.name = name;
+    }
+    Cat.prototype.sayCatName = () => {
+      console.log(this === window); // => true
+      return this.name;
+    };
+    const cat = new Cat("Mew");
+    cat.sayCatName(); // => undefined
+
+    // 定义构造函数不能用箭头函数
+    const Message = (text) => {
+      this.text = text;
+    };
+    // Throws "TypeError: Message is not a constructor"
+    const helloMessage = new Message("Hello World!");
+    ```
 
 - Set 数据结构：不能重复数据，数据是可遍历的对象
 
@@ -2181,23 +2222,22 @@ xhr.send(JSON.stringify(postData));
   // cors 服务端设置可以跨域 CORS请求设置的响应头字段，都以 Access-Control-开头,Access-Control-Allow-Origin：必选
 
   // #proxy服务器
-  `server {
-      listen       81;
-      server_name  www.domain1.com;
+  // server {
+  //     listen       81;
+  //     server_name  www.domain1.com;
 
-      location / {
-          proxy_pass   http://www.domain2.com:8080;  #反向代理
-          proxy_cookie_domain www.domain2.com www.domain1.com; #修改cookie里域名
-          index  index.html index.htm;
+  //     location / {
+  //         proxy_pass   http://www.domain2.com:8080;  #反向代理
+  //         proxy_cookie_domain www.domain2.com www.domain1.com; #修改cookie里域名
+  //         index  index.html index.htm;
 
-          # 当用webpack-dev-server等中间件代理接口访问nignx时，此时无浏览器参与，故没有同源限制，下面的跨域配置可不启用
-          add_header Access-Control-Allow-Origin http://www.domain1.com;  #当前端只跨域不带cookie时，可为*
-          add_header Access-Control-Allow-Credentials true;
-      }
-  }`
+  //         # 当用webpack-dev-server等中间件代理接口访问nignx时，此时无浏览器参与，故没有同源限制，下面的跨域配置可不启用
+  //         add_header Access-Control-Allow-Origin http://www.domain1.com;  #当前端只跨域不带cookie时，可为*
+  //         add_header Access-Control-Allow-Credentials true;
+  //     }
+  // }
 
-
-  let rdcAjax = function (url, method, type, data) {
+  let myAjax = function (url, method, type, data) {
     if (!url) {
       return Promise.reject(new Error("url 不能为空！"));
     }
@@ -2221,7 +2261,6 @@ xhr.send(JSON.stringify(postData));
       let xhr = new XMLHttpRequest();
       xhr.open(method, url);
       xhr.setRequestHeader("Content-Type", type);
-      xhr.setRequestHeader("X-ENT", "rdc");
       xhr.setRequestHeader("access-token", cfg.accessToken);
       xhr.send(data || null);
       xhr.onreadystatechange = function () {

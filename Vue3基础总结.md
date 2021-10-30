@@ -31,7 +31,7 @@
     });
     ```
 
-### Vue3 常用 API：computed、自定义 hooks、Teleport、Suspense、
+### Vue3 常用 API
 
 - setup()：在组件被创建之前，props 被解析之后执行。它是组合式 API 的入口。
 
@@ -130,7 +130,7 @@
     console.log(count.value); // 1
     ```
 
-    - reactive：返回对象的响应式副本
+  - reactive：返回对象的响应式副本
 
     ```js
     setup(){
@@ -327,7 +327,7 @@ const submit = () => {
   const { ref } = Vue;
   const inputValue = ref(null);
   const inputChange = (e) => {
-    inputValue.val = e.target.value;
+    inputValue.value = e.target.value;
   };
   return { inputValue, inputChange };
 };
