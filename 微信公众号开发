@@ -8,6 +8,11 @@ https 请求方式: GET https://api.weixin.qq.com/cgi-bin/token?grant_type=clien
 
 https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx841a97238d9e17b2&redirect_uri=http://cps.dianping.com/weiXinRedirect&response_type=code&scope=snsapi_userinfo&state=type%3Dquan%2Curl%3Dhttp%3A%2F%2Fmm.dianping.com%2Fweixin%2Faccount%2Fhome
 
+https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx841a97238d9e17b2&redirect_uri=http://cps.dianping.com/weiXinRedirect&response_type=code&scope=snsapi_userinfo&state=type%3Dquan%2Curl%3Dhttp%3A%2F%2Fmm.dianping.com%2Fweixin%2Faccount%2Fhome
+
+https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx841a97238d9e17b2&redirect_uri=http://cps.dianping.com/weiXinRedirect&response_type=code&scope=snsapi_base&state=type%3Dquan%2Curl%3Dhttp%3A%2F%2Fmm.dianping.com%2Fweixin%2Faccount%2Fhome
+
+https://www.weixinsxy.com/jssdk/
 模板消息
 
 微信 JS-SDK
@@ -26,9 +31,31 @@ kill -9 34223
 1、网页授权	网页授权获取用户基本信息
 2、JS接口安全域名
 
+公众号设置=》功能设置
+1、业务域名：设置业务域名后，在微信内访问该域名下页面时，不会被重新排版。
+将文件MP_verify_ZIwHmWVMADNYKXAc.txt（点击下载）上传至填写域名或路径指向的web服务器（或虚拟主机）的目录（若填写域名，将文件放置在域名根目录下，例如wx.qq.com/MP_verify_ZIwHmWVMADNYKXAc.txt；若填写路径，将文件放置在路径目录下，例如wx.qq.com/mp/MP_verify_ZIwHmWVMADNYKXAc.txt），并确保可以访问。
+2、JS接口安全域名：设置JS接口安全域名后，公众号开发者可在该域名下调用微信开放的JS接口
+3、网页授权域名：回调的域名
 weixin-js-sdk
 vue-cookie
 
+网页授权access_token：拿到access_token进行授权后的接口调用，获取用户身份信息 
+普通access_token：所有的都能掉用
+
+UnionID：公众号小程序绑定后会生成  调所有应用
+
+授权：吧openid存起来
+
+授权流程：
+用户同意授权，获取code
+通过code换取网页授权access_token
+拉取用户信息scope为snsapi_userinfo
+
+jssdk调用流程：
+绑定域名
+引入js文件
+通过config接口注入权限验证配置（接口签名）
+通过ready接口处理成功验证
 
 问题：
 1、模拟测试  域名  ip
@@ -62,3 +89,5 @@ function isWeiXin(){
         }
     }
     isWeiXin();
+
+appid    wx6ab9cc75f773f1ec
