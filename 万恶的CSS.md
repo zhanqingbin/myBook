@@ -601,3 +601,7 @@ div {
 
 > link 功能较多，可以定义 RSS，定义 Rel 等作用，而@import 只能用于加载 css
 当解析到 link 时，页面会同步加载所引的 css，而@import 所引用的 css 会等到页面加载完才被加载
+
+### em和rem
+- em：相对于当前font-size大小，如果当前没有，就看父级的font-size
+- rem：相对于根元素html的font-size大小

@@ -1,0 +1,64 @@
+获取 access_token
+https 请求方式: GET https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET
+
+微信网页授权：
+1、用户同意获取 code
+2、通过 code 换取网页授权 access_token  和openid
+3、拉取用户信息
+
+https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx841a97238d9e17b2&redirect_uri=http://cps.dianping.com/weiXinRedirect&response_type=code&scope=snsapi_userinfo&state=type%3Dquan%2Curl%3Dhttp%3A%2F%2Fmm.dianping.com%2Fweixin%2Faccount%2Fhome
+
+模板消息
+
+微信 JS-SDK
+
+校验流程：token是只有服务器和微信配置有  外人拿不到
+
+- 1、token、timestamp、nonce 三个参数进行字典排序
+- 2、将三个字符串拼接成一个字符串进行 sha1 加密
+- 3、开发者加密后的字符串可与 signature 对比
+scp ./wechat.py root@23.23.344.45:~/xxx/
+
+netstat -apn | grep 8000
+kill -9 34223
+
+两个白名单配置：
+1、网页授权	网页授权获取用户基本信息
+2、JS接口安全域名
+
+weixin-js-sdk
+vue-cookie
+
+
+问题：
+1、模拟测试  域名  ip
+2、订阅号配置不了，网页授权没有，微信认证   是不是需要后台
+3、使用jssdk是否需要后台验签
+
+获取签名是不是需要后台来做
+
+有编辑器
+
+基本配置：
+APPID
+APPSECRET
+ip白名单
+
+部署：
+1、域名
+2、服务器
+
+真机测试  前端  打包=》服务器部署（域名）=》授权=》手机登录=》登录信息存储
+
+
+判断是否为微信环境下打开的网页
+function isWeiXin(){
+        var ua = window.navigator.userAgent.toLowerCase();
+        if(ua.match(/MicroMessenger/i) == 'micromessenger' || ua.match(/_SQ_/i) == '_sq_'){
+            return true;
+        }else{
+            document.getElementById("follow").style.visibility="hidden"; 
+            return false;
+        }
+    }
+    isWeiXin();
