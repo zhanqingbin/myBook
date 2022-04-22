@@ -58,4 +58,21 @@ u 撤销最后一次操作
 :q! 强制退出放弃保存
 
 Linux文本工具
-echo pin
+echo 屏幕打印与文本输出  echo "hello world"   echo "hello world" > hello.txt  >>追加
+cat 合并文件或查看文件内容  cat hello.txt  -n显示行数  -nE显示空白符  
+合并：cat hello.txt myname.txt >> full.txt   cat full.txt
+cat > test.txt << END(输入流的结束字符串是END)
+tail 显示文件内容尾部  tail log.txt   tail -n 3 log.txt显示3行
+tail -f log.txt  监听变化  有变化就打印控制台  ctrl+c退出监控
+grep 文本过滤工具  grep immoo test.txt > out.txt
+grep -v immoo test.txt  -v不包含
+grep i...o test.txt  正则支持i开头o结尾的5个字符
+ll | grep .txt  筛选txt文件
+ll | grep -E "log[0-9]{1,5}.txt"  -E使用扩展的正则表达式
+
+文件的打包和压缩
+gzip:linux系统文件压缩程序 .gz
+tar:将多个文件打包和压缩的工具 .tar
+.tar.gz
+压缩：tar zcvf tomca
+unzip
