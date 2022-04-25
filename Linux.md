@@ -74,5 +74,15 @@ ll | grep -E "log[0-9]{1,5}.txt"  -E使用扩展的正则表达式
 gzip:linux系统文件压缩程序 .gz
 tar:将多个文件打包和压缩的工具 .tar
 .tar.gz
-压缩：tar zcvf tomca
+压缩：tar zcvf tomcat.tar.gz /usr/local/tomcat
+解压缩：tar zxvf tomcat.tar.gz -C /usr/local/tomcat   -C指定解压缩到哪个路径  默认是当前目录
+z：通过gzip压缩或者解压
+c：创建系的tar.gz文件
+v：显示执行过程
+f：指定压缩文件名称
+x：解压缩tar.gz文件
+-C：指定解压目录
 unzip
+
+安装卸载应用程序
+rpm:"
